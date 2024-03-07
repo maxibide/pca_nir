@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn import svm
@@ -144,7 +145,7 @@ class PCAObject:
 
         return rand_scores_df
 
-    def plot_pca(self, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False):
+    def plot_pca(self, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2):
         """
         Plots the principal components.
 
@@ -157,12 +158,11 @@ class PCAObject:
         - legend (bool): Boolean to include the legend box. Default is False.
         - annotated (bool): Boolean to include labels on the points. Default is True.
         - add_clusters (bool): Boolean to add cluster information on the plot. Default is False.
+        - dimensions (int): Number of dimensions for the plot (2 or 3). Default is 2.
         """
 
         px = self.pc.iloc[:, 0].tolist()
         py = self.pc.iloc[:, 1].tolist()
-
-        plt.figure(figsize=(sizex, sizey))
 
         # List to store legend labels and colors for legend box
         legend_labels = []
@@ -176,23 +176,40 @@ class PCAObject:
         color_map = {value: plt.cm.jet(i/len(unique_values))
                      for i, value in enumerate(unique_values)}
 
-        for i in range(len(px)):
-            plt.scatter(
-                px[i], py[i], c=color_map[self.pc.index[i][color_index]])
+        if dimensions == 2:
 
-            # Add labels to the list for the legend box
-            if legend:
-                label = self.pc.index[i][color_index]
-                if label not in legend_labels:
-                    legend_labels.append(label)
-                    legend_colors.append(
-                        color_map[self.pc.index[i][color_index]])
+            plt.figure(figsize=(sizex, sizey))
 
-            if annotated:
-                plt.annotate(self.pc.index[i][legend_index], (px[i], py[i]),
-                             textcoords="offset points", xytext=(0, 10), ha='center')
+            for i in range(len(px)):
+                plt.scatter(
+                    px[i], py[i], c=color_map[self.pc.index[i][color_index]])
 
-        # Add legend box to the plot
+                if annotated:
+                    plt.annotate(self.pc.index[i][legend_index], (px[i], py[i]),
+                                 textcoords="offset points", xytext=(0, 10), ha='center')
+
+            plt.xlabel('PC1')
+            plt.ylabel('PC2')
+
+        elif dimensions == 3:
+
+            pz = self.pc.iloc[:, 2].tolist()
+
+            fig = plt.figure(figsize=(sizex, sizey))
+            ax = fig.add_subplot(111, projection='3d')
+
+            for i in range(len(px)):
+                ax.scatter(px[i], py[i], pz[i],
+                           c=color_map[self.pc.index[i][color_index]])
+
+                if annotated:
+                    ax.text(px[i], py[i], pz[i], self.pc.index[i][legend_index],
+                            ha='center', fontsize=10)
+
+            ax.set_xlabel('PC1')
+            ax.set_ylabel('PC2')
+            ax.set_zlabel('PC3')
+
         if legend:
             handles = [Patch(color=c, label=l)
                        for c, l in zip(legend_colors, legend_labels)]
@@ -201,12 +218,12 @@ class PCAObject:
                        fancybox=True, shadow=True)
 
         if add_clusters:
-            plt.text(0.95, 0.05, "Silhouette score: " + str(self.sil_score) + "\n" +
-                     str(self.adj_rand_score), ha='right', va='bottom', transform=plt.gca().transAxes)
+            if dimensions == 2:
+                plt.text(0.95, 0.05, "Silhouette score: " + str(self.sil_score) + "\n" +
+                         str(self.adj_rand_score), ha='right', va='bottom', transform=plt.gca().transAxes)
+            elif dimensions == 3:
+                ax.text2D(0.05, 0.95, "Silhouette score: " + str(self.sil_score) + "\n" +
+                          str(self.adj_rand_score), ha='right', va='bottom', transform=ax.transAxes)
 
-        plt.yticks(size=12)
-        plt.xticks(size=12)
-        plt.xlabel('PC1')
-        plt.ylabel('PC2')
         plt.title(title)
         plt.show()

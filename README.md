@@ -33,7 +33,7 @@ pca_obj = PCAObject(spectra_df)
 loadings_df = pca_obj.get_loadings()
 pca_obj.determine_clusters()
 pca_obj.cluster(n_clusters=3)
-pca_obj.plot_pca('Plot Title', sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False)
+pca_obj.plot_pca('Plot Title', sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2)
 ```
 
 ## Contributions
