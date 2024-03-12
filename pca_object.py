@@ -148,87 +148,9 @@ class PCAObject:
         return rand_scores_df
 
     def plot_pca(self, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2):
-        """
-        Plots the principal components.
 
-        Parameters:
-        - title (str): Title of the plot.
-        - sizex (int): Size on the x-axis of the figure. Default is 10.
-        - sizey (int): Size on the y-axis of the figure. Default is 10.
-        - color_index (int): Index for color in the DataFrame. Default is 0.
-        - legend_index (int): Index for legend in the DataFrame. Default is 0.
-        - legend (bool): Boolean to include the legend box. Default is False.
-        - annotated (bool): Boolean to include labels on the points. Default is True.
-        - add_clusters (bool): Boolean to add cluster information on the plot. Default is False.
-        - dimensions (int): Number of dimensions for the plot (2 or 3). Default is 2.
-        """
-
-        px = self.pc.iloc[:, 0].tolist()
-        py = self.pc.iloc[:, 1].tolist()
-
-        # List to store legend labels and colors for legend box
-        legend_labels = []
-        legend_colors = []
-
-        # Store unique values of self.pc.index[i][color_index] in unique_values
-        unique_values = np.unique([self.pc.index[i][color_index]
-                                   for i in range(len(px))])
-
-        # Create a dictionary mapping each unique value to a color
-        color_map = {value: plt.cm.jet(i/len(unique_values))
-                     for i, value in enumerate(unique_values)}
-
-        if dimensions == 2:
-
-            plt.figure(figsize=(sizex, sizey))
-
-            for i in range(len(px)):
-                plt.scatter(
-                    px[i], py[i], c=color_map[self.pc.index[i][color_index]])
-
-                if annotated:
-                    plt.annotate(self.pc.index[i][legend_index], (px[i], py[i]),
-                                 textcoords="offset points", xytext=(0, 10), ha='center')
-
-            plt.xlabel('PC1')
-            plt.ylabel('PC2')
-
-        elif dimensions == 3:
-
-            pz = self.pc.iloc[:, 2].tolist()
-
-            fig = plt.figure(figsize=(sizex, sizey))
-            ax = fig.add_subplot(111, projection='3d')
-
-            for i in range(len(px)):
-                ax.scatter(px[i], py[i], pz[i],
-                           c=color_map[self.pc.index[i][color_index]])
-
-                if annotated:
-                    ax.text(px[i], py[i], pz[i], self.pc.index[i][legend_index],
-                            ha='center', fontsize=10)
-
-            ax.set_xlabel('PC1')
-            ax.set_ylabel('PC2')
-            ax.set_zlabel('PC3')
-
-        if legend:
-            handles = [Patch(color=c, label=l)
-                       for c, l in zip(legend_colors, legend_labels)]
-            plt.legend(handles=handles, loc='upper right', markerscale=2, fontsize=10, title="Legend",
-                       title_fontsize='13', facecolor='lightgrey', edgecolor='black',
-                       fancybox=True, shadow=True)
-
-        if add_clusters:
-            if dimensions == 2:
-                plt.text(0.95, 0.05, "Silhouette score: " + str(self.sil_score) + "\n" +
-                         str(self.adj_rand_score), ha='right', va='bottom', transform=plt.gca().transAxes)
-            elif dimensions == 3:
-                ax.text2D(0.05, 0.95, "Silhouette score: " + str(self.sil_score) + "\n" +
-                          str(self.adj_rand_score), ha='right', va='bottom', transform=ax.transAxes)
-
-        plt.title(title)
-        plt.show()
+        plot_pca(self.pc, title, sizex, sizey, color_index, legend_index, legend, annotated,
+                 add_clusters, dimensions, sil_score=self.sil_score, adj_rand_score=self.adj_rand_score)
 
     def predict_samples(self, df_val):
         """
@@ -268,3 +190,87 @@ class PCAObject:
         df_pred.set_index(['cluster', 'type'], append=True, inplace=True)
 
         return df_pred
+
+
+def plot_pca(df, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2, sil_score=None, adj_rand_score=None):
+    """
+    Plots the principal components.
+
+    Parameters:
+    - title (str): Title of the plot.
+    - sizex (int): Size on the x-axis of the figure. Default is 10.
+    - sizey (int): Size on the y-axis of the figure. Default is 10.
+    - color_index (int): Index for color in the DataFrame. Default is 0.
+    - legend_index (int): Index for legend in the DataFrame. Default is 0.
+    - legend (bool): Boolean to include the legend box. Default is False.
+    - annotated (bool): Boolean to include labels on the points. Default is True.
+    - add_clusters (bool): Boolean to add cluster information on the plot. Default is False.
+    - dimensions (int): Number of dimensions for the plot (2 or 3). Default is 2.
+    """
+
+    px = df.iloc[:, 0].tolist()
+    py = df.iloc[:, 1].tolist()
+
+    # List to store legend labels and colors for legend box
+    legend_labels = []
+    legend_colors = []
+
+    # Store unique values of self.pc.index[i][color_index] in unique_values
+    unique_values = np.unique([df.index[i][color_index]
+                               for i in range(len(px))])
+
+    # Create a dictionary mapping each unique value to a color
+    color_map = {value: plt.cm.jet(i/len(unique_values))
+                 for i, value in enumerate(unique_values)}
+
+    if dimensions == 2:
+
+        plt.figure(figsize=(sizex, sizey))
+
+        for i in range(len(px)):
+            plt.scatter(
+                px[i], py[i], c=color_map[df.index[i][color_index]])
+
+            if annotated:
+                plt.annotate(df.index[i][legend_index], (px[i], py[i]),
+                             textcoords="offset points", xytext=(0, 10), ha='center')
+
+        plt.xlabel('PC1')
+        plt.ylabel('PC2')
+
+    elif dimensions == 3:
+
+        pz = df.iloc[:, 2].tolist()
+
+        fig = plt.figure(figsize=(sizex, sizey))
+        ax = fig.add_subplot(111, projection='3d')
+
+        for i in range(len(px)):
+            ax.scatter(px[i], py[i], pz[i],
+                       c=color_map[self.pc.index[i][color_index]])
+
+            if annotated:
+                ax.text(px[i], py[i], pz[i], df.index[i][legend_index],
+                        ha='center', fontsize=10)
+
+        ax.set_xlabel('PC1')
+        ax.set_ylabel('PC2')
+        ax.set_zlabel('PC3')
+
+    if legend:
+        handles = [Patch(color=c, label=l)
+                   for c, l in zip(legend_colors, legend_labels)]
+        plt.legend(handles=handles, loc='upper right', markerscale=2, fontsize=10, title="Legend",
+                   title_fontsize='13', facecolor='lightgrey', edgecolor='black',
+                   fancybox=True, shadow=True)
+
+    if add_clusters:
+        if dimensions == 2:
+            plt.text(0.95, 0.05, "Silhouette score: " + str(sil_score) + "\n" +
+                     str(adj_rand_score), ha='right', va='bottom', transform=plt.gca().transAxes)
+        elif dimensions == 3:
+            ax.text2D(0.05, 0.95, "Silhouette score: " + str(sil_score) + "\n" +
+                      str(adj_rand_score), ha='right', va='bottom', transform=ax.transAxes)
+
+    plt.title(title)
+    plt.show()
