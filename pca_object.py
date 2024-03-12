@@ -181,8 +181,8 @@ class PCAObject:
         # Predict cluster labels for the new data
         y_pred = self.kmeans.predict(predict_pca)
 
-        # Create a new DataFrame with the predictions
-        df_pred = df_val.copy()
+        df_pred = pd.DataFrame(predict_pca, index=df_val.index)
+
         df_pred['cluster'] = y_pred
         df_pred['type'] = 'prediction'
 
