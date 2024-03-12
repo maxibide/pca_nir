@@ -247,7 +247,7 @@ def plot_pca(df, title, sizex=10, sizey=10, color_index=0, legend_index=0, legen
 
         for i in range(len(px)):
             ax.scatter(px[i], py[i], pz[i],
-                       c=color_map[self.pc.index[i][color_index]])
+                       c=color_map[df.index[i][color_index]])
 
             if annotated:
                 ax.text(px[i], py[i], pz[i], df.index[i][legend_index],
