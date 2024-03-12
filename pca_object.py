@@ -28,13 +28,14 @@ class PCAObject:
         feat = self.df.values.astype('float32')
 
         # Scale the data
-        scaler = StandardScaler()
-        scaler.fit(feat)
-        scaled_feat = scaler.transform(feat)
+        self.scaler = StandardScaler()
+        self.scaler.fit(feat)
+        scaled_feat = self.scaler.transform(feat)
 
         # Obtain principal components
         self.pca = PCA(n_components=self.components).fit(scaled_feat)
         self.pc = pd.DataFrame(self.pca.transform(scaled_feat), index=df.index)
+        self.kmeans = None
         self.sil_score = None
         self.davies_bouldin = None
         self.calinski_harabasz = None
@@ -96,19 +97,20 @@ class PCAObject:
         """
 
         # Cluster the data using K-means
-        kmeans = KMeans(n_clusters=n_clusters, n_init=10)
-        kmeans.fit(self.pc)
-        clusters = kmeans.labels_
+        self.kmeans = KMeans(n_clusters=n_clusters, n_init=10)
+        self.kmeans.fit(self.pc)
+        clusters = self.kmeans.labels_
 
         # Calculate silhouette score
-        self.sil_score = silhouette_score(self.pc, kmeans.labels_)
+        self.sil_score = silhouette_score(self.pc, self.kmeans.labels_)
 
         # Davies-Bouldin Score
-        self.davies_bouldin = davies_bouldin_score(self.pc, kmeans.labels_)
+        self.davies_bouldin = davies_bouldin_score(
+            self.pc, self.kmeans.labels_)
 
         # Calinski-Harabasz Score
         self.calinski_harabasz = calinski_harabasz_score(
-            self.pc, kmeans.labels_)
+            self.pc, self.kmeans.labels_)
 
         self.pc["cluster"] = clusters
         self.pc.set_index('cluster', append=True, inplace=True)
@@ -227,3 +229,42 @@ class PCAObject:
 
         plt.title(title)
         plt.show()
+
+    def predict_samples(self, df_val):
+        """
+        Predicts the cluster labels for a new set of data using the previously trained clustering model.
+
+        Args:
+            df_val (pandas.DataFrame): New set of data for which cluster labels are to be predicted.
+
+        Returns:
+            pandas.DataFrame: DataFrame with the cluster predictions and a "prediction" identifier for each sample.
+
+        Raises:
+            ValueError: If no clustering model has been trained previously.
+        """
+        if self.kmeans is None:
+            raise ValueError(
+                "No cluster model found. Run the cluster method first.")
+
+        # Read data into an array (scans)
+        np_val = df_val.values.astype('float32')
+
+        # Scale the new data using the same scaler as the original data
+        scaled_val = self.scaler.transform(np_val)
+
+        # Transform the scaled new data to PCA space
+        predict_pca = self.pca.transform(scaled_val)
+
+        # Predict cluster labels for the new data
+        y_pred = self.kmeans.predict(predict_pca)
+
+        # Create a new DataFrame with the predictions
+        df_pred = df_val.copy()
+        df_pred['cluster'] = y_pred
+        df_pred['type'] = 'prediction'
+
+        # Set the cluster and type as the index
+        df_pred.set_index(['cluster', 'type'], append=True, inplace=True)
+
+        return df_pred
