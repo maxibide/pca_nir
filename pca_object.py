@@ -88,13 +88,16 @@ class PCAObject:
         plt.title('Silhouette Criterion')
         plt.show()
 
-    def cluster(self, n_clusters):
+    def kmeans_cluster(self, n_clusters):
         """
         Clusters the data using the K-means algorithm.
 
         Parameters:
         - n_clusters (int): Number of clusters to create.
         """
+
+        if "cluster" in self.pc.index.names:
+            self.pc = self.pc.reset_index(level='cluster', drop=True)
 
         # Cluster the data using K-means
         self.kmeans = KMeans(n_clusters=n_clusters, n_init=10)
