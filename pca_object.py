@@ -168,7 +168,7 @@ class PCAObject:
         plot_pca(self.pc, title, sizex, sizey, color_index, legend_index, legend, annotated,
                  add_clusters, dimensions, sil_score=self.sil_score, adj_rand_score=self.adj_rand_score)
 
-    def predict_samples(self, df_val):
+    def kmeans_predict(self, df_val):
         """
         Predicts the cluster labels for a new set of data using the previously trained clustering model.
 
