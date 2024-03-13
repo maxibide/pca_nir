@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn import svm
-from sklearn.cluster import KMeans, DBSCAN
+from sklearn.cluster import KMeans, DBSCAN, HDBSCAN
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score, adjusted_rand_score
 from scipy.signal import savgol_filter
 
@@ -163,6 +163,19 @@ class PCAObject:
 
         print("Predicted cluster: ", clusters)
 
+    def hdbscan_cluster(self, min_cluster_size):
+
+        if "cluster" in self.pc.index.names:
+            self.pc = self.pc.reset_index(level='cluster', drop=True)
+
+        hdb = HDBSCAN(min_cluster_size=min_cluster_size)
+        clusters = hdb.fit_predict(self.pc)
+
+        self.pc["cluster"] = clusters
+        self.pc.set_index('cluster', append=True, inplace=True)
+
+        print("Predicted cluster: ", clusters)
+
     def plot_pca(self, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2):
 
         plot_pca(self.pc, title, sizex, sizey, color_index, legend_index, legend, annotated,
@@ -263,7 +276,7 @@ def plot_pca(df, title, sizex=10, sizey=10, color_index=0, legend_index=0, legen
 
         for i in range(len(px)):
             ax.scatter(px[i], py[i], pz[i],
-                       c=color_map[self.pc.index[i][color_index]])
+                       c=color_map[df.index[i][color_index]])
 
             if annotated:
                 ax.text(px[i], py[i], pz[i], df.index[i][legend_index],
