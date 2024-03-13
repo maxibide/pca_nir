@@ -179,7 +179,7 @@ class PCAObject:
     def plot_pca(self, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2):
 
         plot_pca(self.pc, title, sizex, sizey, color_index, legend_index, legend, annotated,
-                 add_clusters, dimensions, sil_score=self.sil_score, adj_rand_score=self.adj_rand_score)
+                 add_clusters, dimensions, sil_score=self.sil_score, adj_rand_score=self.rand_score)
 
     def kmeans_predict(self, df_val):
         """
