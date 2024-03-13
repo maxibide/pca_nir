@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn import svm
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score, adjusted_rand_score
 from scipy.signal import savgol_filter
 
@@ -149,6 +149,19 @@ class PCAObject:
             rand_scores, orient='index', columns=['Adjusted Rand Score'])
 
         return rand_scores_df
+
+    def dbscan_cluster(self, eps, min_samples):
+
+        if "cluster" in self.pc.index.names:
+            self.pc = self.pc.reset_index(level='cluster', drop=True)
+
+        db = DBSCAN(eps=eps, min_samples=5)
+        clusters = db.fit_predict(self.pc)
+
+        self.pc["cluster"] = clusters
+        self.pc.set_index('cluster', append=True, inplace=True)
+
+        print("Predicted cluster: ", clusters)
 
     def plot_pca(self, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2):
 
