@@ -7,7 +7,7 @@ import os
 import re
 
 
-def plot(df, title=None, xlabel=None, ylabel=None, sizex=10, sizey=6, legend=False):
+def plot(df, title=None, xlabel=None, ylabel=None, sizex=10, sizey=6, legend=False, invert_x=False):
     """
     Receives a DataFrame and plots it row by row.
     """
@@ -21,6 +21,9 @@ def plot(df, title=None, xlabel=None, ylabel=None, sizex=10, sizey=6, legend=Fal
     plt.ylabel(ylabel)
     # Rotate the header names for readability
     plt.xticks(rotation=45)
+
+    if invert_x:
+        plt.gca().invert_xaxis()
 
     for index, row in df.iterrows():
         plt.plot(headers, row.values, linewidth=0.5, label=index)
