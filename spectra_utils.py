@@ -69,7 +69,6 @@ def extract_metadata(file_name, pattern, indices):
 
     return treatment_data
 
-
 def import_spectra(pattern, indices, directory):
     """
     Imports spectra from CSV files in the specified directory.
@@ -107,3 +106,38 @@ def apply_savgol(row, window_length, polyorder, deriv):
     smoothed_row = savgol_filter(
         row.values, window_length=window_length, polyorder=polyorder, deriv=deriv)
     return pd.Series(smoothed_row, index=row.index)
+
+
+class Spectra:
+    def __init__(self, pattern, indices, directory):
+        self.data = import_spectra(pattern, indices, directory)
+
+    def _copy_with_data(self, new_data):
+        new_instance = Spectra.__new__(Spectra)
+        new_instance.data = new_data
+        return new_instance
+
+    def do_snv(self):
+        new_data = self.data.apply(snv, axis=1)
+        return self._copy_with_data(new_data)
+
+    def do_savgol(self, window_length, polyorder, deriv):
+        new_data = self.data.apply(lambda x: apply_savgol(
+            x, window_length, polyorder, deriv), axis=1)
+        return self._copy_with_data(new_data)
+
+    def slice(self, min_value, max_value):
+        selected_columns = [
+            column for column in self.data.columns if min_value <= int(column) <= max_value]
+        new_data = self.data[selected_columns]
+        return self._copy_with_data(new_data)
+
+    def to_nm(self):
+        def wavenumber_to_wavelength(cm):
+            return 10000000 / cm
+
+        transformed_columns = [wavenumber_to_wavelength(
+            float(column)) for column in self.data.columns]
+        new_data = self.data.copy()
+        new_data.columns = transformed_columns
+        return self._copy_with_data(new_data)
