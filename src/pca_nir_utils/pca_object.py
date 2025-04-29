@@ -12,7 +12,7 @@ from scipy.signal import savgol_filter
 
 
 class PCAObject:
-    def __init__(self, df, components=3):
+    def __init__(self, df, components=3, scaler=True):
         """
         Class for performing Principal Component Analysis (PCA) and clustering analysis on the data.
 
@@ -27,14 +27,18 @@ class PCAObject:
         # Read data into an array (scans)
         feat = self.df.values.astype('float32')
 
-        # Scale the data
-        self.scaler = StandardScaler()
-        self.scaler.fit(feat)
-        scaled_feat = self.scaler.transform(feat)
+        # Scale the data and obtain principal components
+        if scaler:
+            self.scaler = StandardScaler()
+            self.scaler.fit(feat)
+            scaled_feat = self.scaler.transform(feat)
+            self.pca = PCA(n_components=self.components).fit(scaled_feat)
+            self.pc = pd.DataFrame(self.pca.transform(scaled_feat), index=df.index)
+        # Or just obtain principal components
+        else:
+            self.pca = PCA(n_components=self.components).fit(feat)
+            self.pc = pd.DataFrame(self.pca.transform(feat), index=df.index)
 
-        # Obtain principal components
-        self.pca = PCA(n_components=self.components).fit(scaled_feat)
-        self.pc = pd.DataFrame(self.pca.transform(scaled_feat), index=df.index)
         self.kmeans = None
         self.sil_score = None
         self.davies_bouldin = None
@@ -119,13 +123,13 @@ class PCAObject:
         self.pc.set_index('cluster', append=True, inplace=True)
 
         # Adjusted Rand Score
-        self.adj_rand_score = self._calculate_rand_score()
+        self.rand_score = self._calculate_rand_score()
 
         print("Predicted cluster: ", clusters)
         print("Silhouette score: ", self.sil_score)
         print("Davies Bouldin Score: ", self.davies_bouldin)
         print("Calinski Harabasz Score: ", self.calinski_harabasz)
-        print("Adjusted Rand Score: ", self.adj_rand_score)
+        print("Adjusted Rand Score: ", self.rand_score)
 
     def _calculate_rand_score(self):
         """
@@ -176,9 +180,9 @@ class PCAObject:
 
         print("Predicted cluster: ", clusters)
 
-    def plot_pca(self, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2):
+    def plot_pca(self, title="PCA", pcx=1, pcy=2, pcz=3, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2):
 
-        plot_pca(self.pc, title, sizex, sizey, color_index, legend_index, legend, annotated,
+        plot_pca(self.pc, title, pcx, pcy, pcz, sizex, sizey, color_index, legend_index, legend, annotated,
                  add_clusters, dimensions, sil_score=self.sil_score, adj_rand_score=self.rand_score)
 
     def kmeans_predict(self, df_val):
@@ -221,7 +225,7 @@ class PCAObject:
         return df_pred
 
 
-def plot_pca(df, title, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2, sil_score=None, adj_rand_score=None):
+def plot_pca(df, title="PCA", pcx=1, pcy=2, pcz=3, sizex=10, sizey=10, color_index=0, legend_index=0, legend=False, annotated=True, add_clusters=False, dimensions=2, sil_score=None, adj_rand_score=None):
     """
     Plots the principal components.
 
@@ -237,8 +241,8 @@ def plot_pca(df, title, sizex=10, sizey=10, color_index=0, legend_index=0, legen
     - dimensions (int): Number of dimensions for the plot (2 or 3). Default is 2.
     """
 
-    px = df.iloc[:, 0].tolist()
-    py = df.iloc[:, 1].tolist()
+    px = df.iloc[:, pcx-1].tolist()
+    py = df.iloc[:, pcy-1].tolist()
 
     # List to store legend labels and colors for legend box
     legend_labels = []
@@ -264,12 +268,12 @@ def plot_pca(df, title, sizex=10, sizey=10, color_index=0, legend_index=0, legen
                 plt.annotate(df.index[i][legend_index], (px[i], py[i]),
                              textcoords="offset points", xytext=(0, 10), ha='center')
 
-        plt.xlabel('PC1')
-        plt.ylabel('PC2')
+        plt.xlabel(f'PC{pcx}')
+        plt.ylabel(f'PC{pcy}')
 
     elif dimensions == 3:
 
-        pz = df.iloc[:, 2].tolist()
+        pz = df.iloc[:, pcz-1].tolist()
 
         fig = plt.figure(figsize=(sizex, sizey))
         ax = fig.add_subplot(111, projection='3d')
@@ -282,9 +286,9 @@ def plot_pca(df, title, sizex=10, sizey=10, color_index=0, legend_index=0, legen
                 ax.text(px[i], py[i], pz[i], df.index[i][legend_index],
                         ha='center', fontsize=10)
 
-        ax.set_xlabel('PC1')
-        ax.set_ylabel('PC2')
-        ax.set_zlabel('PC3')
+        ax.set_xlabel(f'PC{pcx}')
+        ax.set_ylabel(f'PC{pcy}')
+        ax.set_zlabel(f'PC{pcz}')
 
     if legend:
         handles = [Patch(color=c, label=l)

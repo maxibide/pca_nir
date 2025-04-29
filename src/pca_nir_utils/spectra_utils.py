@@ -7,7 +7,7 @@ import os
 import re
 
 
-def plot(df, title=None, xlabel=None, ylabel=None, sizex=10, sizey=6, legend=False, steps=1000, invert_x=False):
+def plot(df, title=None, xlabel=None, ylabel=None, sizex=10, sizey=6, legend=False, steps=1000, invert_x=False, log_x=False, xline=False):
     """
     Receives a DataFrame and plots it row by row.
     """
@@ -15,26 +15,33 @@ def plot(df, title=None, xlabel=None, ylabel=None, sizex=10, sizey=6, legend=Fal
     # Get the header data
     headers = df.columns.values
 
-    plt.figure(figsize=(sizex, sizey))
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    fig, ax = plt.subplots(figsize=(sizex, sizey))
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     # Rotate the header names for readability
-    plt.xticks(rotation=45)
-    plt.xticks(np.arange(min(headers), max(headers)+1, steps))
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+    ax.set_xticks(np.arange(min(headers), max(headers)+1, steps))
 
     if invert_x:
-        plt.gca().invert_xaxis()
+        ax.invert_xaxis()
+
+    if log_x:
+        ax.set_xscale('log')
 
     for index, row in df.iterrows():
-        plt.plot(headers, row.values, linewidth=0.5, label=index)
+        ax.plot(headers, row.values, linewidth=0.5, label=index)
         if legend:
-            plt.legend()
+            ax.legend()
 
+    if xline:
+        plt.axhline(0, color='red', linestyle='--', linewidth=1)
+
+    plt.tight_layout()
     plt.show()
 
 
-def read_spectrum_file(file_path):
+def read_spectrum_file(file_path, ignore_shape):
     """
     Reads a CSV file containing a spectrum and converts it to a DataFrame.
     """
@@ -45,7 +52,7 @@ def read_spectrum_file(file_path):
     if transposed_df.isna().any().any():
         raise ValueError(f"File {file_path} contains missing data.")
 
-    if transposed_df.shape != (2, 3112):
+    if not ignore_shape and transposed_df.shape != (2, 3112):
         raise ValueError(f"File {file_path} does not have the expected shape.")
 
     transposed_df.columns = transposed_df.iloc[0]
@@ -69,16 +76,16 @@ def extract_metadata(file_name, pattern, indices):
 
     return treatment_data
 
-def import_spectra(pattern, indices, directory):
+def import_spectra(pattern, indices, directory, ignore_shape=False):
     """
     Imports spectra from CSV files in the specified directory.
     """
     spectra = []
     for file_name in os.listdir(directory):
-        if file_name.endswith('.CSV'):
+        if file_name.lower().endswith('.csv'):
             file_path = os.path.join(directory, file_name)
             try:
-                spectrum_df = read_spectrum_file(file_path)
+                spectrum_df = read_spectrum_file(file_path, ignore_shape)
                 treatment_data = extract_metadata(file_name, pattern, indices)
                 spectrum_df = spectrum_df.assign(**treatment_data)
                 spectrum_df.set_index(
@@ -86,6 +93,7 @@ def import_spectra(pattern, indices, directory):
                 spectra.append(spectrum_df)
             except Exception as e:
                 print(f"Error processing file {file_name}: {str(e)}")
+            print(f"Processed {file_name}")
     if spectra:
         return pd.concat(spectra, axis=0, ignore_index=False)
     else:
@@ -109,8 +117,8 @@ def apply_savgol(row, window_length, polyorder, deriv):
 
 
 class Spectra:
-    def __init__(self, pattern, indices, directory):
-        self.data = import_spectra(pattern, indices, directory)
+    def __init__(self, pattern, indices, directory, ignore_shape=False):
+        self.data = import_spectra(pattern, indices, directory, ignore_shape)
 
     def _copy_with_data(self, new_data):
         new_instance = Spectra.__new__(Spectra)
@@ -141,3 +149,9 @@ class Spectra:
         new_data = self.data.copy()
         new_data.columns = transformed_columns
         return self._copy_with_data(new_data)
+
+    def filter(self, index, values):
+        new_data = self.data.copy()
+        filtrados = new_data[new_data.index.get_level_values(index).isin(values)]
+
+        return self._copy_with_data(filtrados)
