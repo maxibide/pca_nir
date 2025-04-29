@@ -1,3 +1,32 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 .ipynb_checkpoints
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
 env/
+venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Editors and IDEs
+.vscode/
+.idea/
+
+# Tests
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# Coverage
+htmlcov/
+.coverage
+
+# macOS
+.DS_Store
